@@ -21,6 +21,9 @@ make typecheck
 make test
 ```
 
+A reproducible local performance baseline is documented in `docs/performance-baseline.md`, and can
+be regenerated with `make profile-sample`.
+
 ## Running a Backtest
 
 Use the `pm-bt backtest` command to run a single-market backtest:

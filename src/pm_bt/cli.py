@@ -184,6 +184,7 @@ def _persist_single_run(
     *,
     argv_run: bool,
 ) -> RunPersistencePayload:
+    total_t0 = perf_counter()
     strategy = _build_strategy(config.strategy_name, config.strategy_params)
     artifacts = BacktestEngine(config=config, strategy=strategy).run()
 
@@ -211,6 +212,7 @@ def _persist_single_run(
     artifacts.run_result.forecasting_metrics.update(forecasting_metrics)
     artifacts.run_result.artifacts.update(report_artifacts)
 
+    artifacts.run_result.timings.total_s = perf_counter() - total_t0
     results_payload = artifacts.run_result.model_dump(mode="json")
     _ = results_path.write_text(
         json.dumps(results_payload, indent=2, sort_keys=True),

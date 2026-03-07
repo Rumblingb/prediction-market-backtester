@@ -20,6 +20,7 @@ from pm_bt.reporting.metrics import (
     compute_win_rate,
 )
 from pm_bt.reporting.plots import plot_drawdown, plot_equity_curve, plot_returns_distribution
+from pm_bt.reporting.validation import RunCoherenceSummary, validate_run_directory
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,8 @@ __all__ = [
     "plot_drawdown",
     "plot_equity_curve",
     "plot_returns_distribution",
+    "RunCoherenceSummary",
+    "validate_run_directory",
 ]
 
 

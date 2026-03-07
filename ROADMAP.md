@@ -335,7 +335,7 @@ Build a daily/batch scanner producing alerts:
 ### Checklist (acceptance)
 - [x] Coverage >= 70% (target >= 80% later)
 - [ ] Golden test passes on CI (equity hash)
-- [ ] Basic profiling report exists (README notes runtime on sample)
+- [x] Basic profiling report exists (README notes runtime on sample)
 - [x] `pm-bt` returns non-zero exit code on failures with clear message
 
 ---

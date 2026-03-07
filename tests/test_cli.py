@@ -8,6 +8,7 @@ from typing import cast
 import polars as pl
 
 from pm_bt.cli import run_cli
+from pm_bt.reporting import validate_run_directory
 
 
 def _write_trades_fixture(data_root: Path) -> None:
@@ -151,6 +152,41 @@ def test_cli_backtest_writes_results_equity_and_trades(tmp_path: Path) -> None:
     assert trading_metrics["bars_processed"] > 0
     assert artifacts["equity_csv"].endswith("equity.csv")
     assert artifacts["trades_csv"].endswith("trades.csv")
+
+
+def test_cli_backtest_results_are_coherent_with_csv_artifacts(tmp_path: Path) -> None:
+    data_root = tmp_path / "data"
+    output_root = tmp_path / "output"
+    config_path = tmp_path / "config.yaml"
+    _write_trades_fixture(data_root)
+    _write_markets_fixture(data_root)
+    _write_strategy_config(config_path)
+
+    exit_code = run_cli(
+        [
+            "backtest",
+            "--venue",
+            "kalshi",
+            "--market",
+            "KX-RAIN-2026-01-01",
+            "--strategy",
+            "momentum",
+            "--config",
+            str(config_path),
+            "--data-root",
+            str(data_root),
+            "--output-root",
+            str(output_root),
+        ]
+    )
+
+    assert exit_code == 0
+
+    run_dir = _first_run_dir(output_root)
+    summary = validate_run_directory(run_dir)
+    assert summary.run_id
+    assert summary.bars_processed > 0
+    assert summary.final_equity > 0.0
 
 
 def test_cli_backtest_returns_nonzero_for_unknown_strategy(tmp_path: Path) -> None:
