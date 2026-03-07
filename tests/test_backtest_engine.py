@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
@@ -21,6 +23,27 @@ def _assert_close(actual: float, expected: float, *, tol: float = 1e-12) -> None
 
 def _series_value(df: pl.DataFrame, column: str, index: int) -> float:
     return float(cast(float, df[column][index]))
+
+
+def _equity_curve_hash(df: pl.DataFrame) -> str:
+    rows: list[dict[str, object]] = []
+    for row in df.iter_rows(named=True):
+        rows.append(
+            {
+                "ts": cast(datetime, row["ts"]).isoformat(),
+                "equity": round(float(cast(float, row["equity"])), 12),
+                "cash": round(float(cast(float, row["cash"])), 12),
+                "realized_pnl": round(float(cast(float, row["realized_pnl"])), 12),
+                "unrealized_pnl": round(float(cast(float, row["unrealized_pnl"])), 12),
+                "gross_notional_exposure": round(
+                    float(cast(float, row["gross_notional_exposure"])),
+                    12,
+                ),
+                "cash_at_risk_gross": round(float(cast(float, row["cash_at_risk_gross"])), 12),
+            }
+        )
+    payload = json.dumps(rows, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
 def _write_trades_fixture(data_root: Path) -> None:
@@ -215,6 +238,49 @@ def test_backtest_engine_accounts_realized_and_unrealized_pnl_from_round_trip() 
     _assert_close(artifacts.run_result.trading_metrics["realized_pnl"], 0.8)
     _assert_close(artifacts.run_result.trading_metrics["unrealized_pnl"], 0.0)
     _assert_close(artifacts.run_result.trading_metrics["total_pnl"], 0.8)
+
+
+def test_backtest_engine_equity_curve_matches_golden_hash() -> None:
+    bars = pl.DataFrame(
+        {
+            "ts_open": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "ts_close": [
+                datetime(2026, 1, 1, 9, 0, tzinfo=UTC),
+                datetime(2026, 1, 1, 9, 1, tzinfo=UTC),
+            ],
+            "market_id": ["KX-RAIN-2026-01-01", "KX-RAIN-2026-01-01"],
+            "outcome_id": ["yes", "yes"],
+            "venue": ["kalshi", "kalshi"],
+            "open": [0.50, 0.60],
+            "high": [0.50, 0.60],
+            "low": [0.50, 0.60],
+            "close": [0.50, 0.60],
+            "volume": [100.0, 100.0],
+            "vwap": [0.50, 0.60],
+            "trade_count": [1, 1],
+            "momentum": [None, 0.2],
+        }
+    )
+    config = BacktestConfig(
+        name="engine-golden",
+        venue=Venue.KALSHI,
+        market_id="KX-RAIN-2026-01-01",
+        initial_cash=100.0,
+        fee_bps=0.0,
+        slippage_bps=0.0,
+        latency_bars=0,
+        max_position_size=100.0,
+        max_gross_exposure=10_000.0,
+    )
+
+    artifacts = BacktestEngine(config=config, strategy=_RoundTripStrategy()).run(bars)
+
+    assert _equity_curve_hash(artifacts.equity_curve) == (
+        "a5eea69a69124f895bf2a3f9c26f8ba682bb1cd10a8b09832a1f2a984715a18b"
+    )
 
 
 def test_backtest_engine_passes_row_features_to_strategy() -> None:

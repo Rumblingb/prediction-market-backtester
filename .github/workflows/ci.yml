@@ -25,5 +25,5 @@ jobs:
         run: uv run ruff format --check .
       - name: BasedPyright
         run: uv run basedpyright
-      - name: Pytest
-        run: uv run pytest
+      - name: Pytest with coverage
+        run: uv run pytest --cov=src/pm_bt --cov-report=term-missing

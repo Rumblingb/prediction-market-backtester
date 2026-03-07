@@ -8,6 +8,9 @@ Quant-style backtesting engine for prediction markets (Polymarket + Kalshi), foc
 - Reuse robust historical ingestion patterns from `prediction-market-analysis`.
 - Prioritize correctness, reproducibility, and explicit execution assumptions.
 - Keep strategy/execution/accounting logic in the engine (CLI/API), not in UI code.
+- Domain framing and the current execution-model assumptions are documented in
+  `docs/prediction-markets-vs-tradfi.md`; typed engine/data contracts are summarized in
+  `docs/engine-contracts.md`.
 
 ## Quickstart
 
@@ -60,6 +63,24 @@ Each run produces a directory under `<output-root>/<run-id>/` containing:
 - **`results.json`** — full run metadata: config, git commit hash, timings, and trading metrics (total PnL, max drawdown, realized/unrealized PnL, turnover, fill count)
 - **`equity.csv`** — per-bar equity curve with cash, realized PnL, unrealized PnL, gross notional exposure, and cash-at-risk
 - **`trades.csv`** — every fill with timestamp, side, quantity, price, fees, slippage cost, and latency
+
+### Execution model assumptions
+
+Current backtests use a deliberately conservative, explicit execution model:
+
+- prices are treated as market-implied probabilities for binary-payoff contracts
+- buys fill at ask and sells fill at bid; in the current bar-based pipeline this defaults to a
+  2-cent spread proxy unless a richer snapshot provides spread inputs
+- fees are percent-of-notional and slippage is configurable in basis points
+- latency is modeled in bars via delayed order activation
+- max exposure is enforced as gross cash-at-risk, not raw notional
+- fills are immediate once an order becomes eligible; there is no order-book depth or partial-fill
+  model yet beyond quantity clipping by risk limits
+- forecasting metrics are scored on fill execution prices for resolved markets and remain separate
+  from trading performance metrics
+
+See `docs/prediction-markets-vs-tradfi.md` for the rationale and the exact assumptions used by
+the simulator.
 
 ### Strategy configs
 

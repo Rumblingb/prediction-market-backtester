@@ -51,6 +51,32 @@ Prediction markets share some trading mechanics with financial markets, but the 
    - calibration (Brier/log loss) measures predictive quality on resolved markets
    - PnL measures executable performance under microstructure constraints
 
+## Current Simulator Assumptions
+
+These are the assumptions implemented today in `pm_bt`, not generic future goals.
+
+- **Payoff semantics**: exposure limits are computed in **cash-at-risk** terms for binary payoff
+  contracts, rather than in raw notional.
+- **Fill side**: buys fill at `ask = mid + spread / 2`; sells fill at
+  `bid = mid - spread / 2`.
+- **Spread proxy**: the simulator defaults to a `0.02` spread when the snapshot does not provide a
+  spread or recent trade prices. In the current backtest engine, bar snapshots do not yet pass
+  recent prices, so the default spread proxy is what the standard CLI path uses.
+- **Slippage**: slippage is applied on top of bid/ask. The active configuration exposed through
+  `BacktestConfig` is basis-point slippage on fill price.
+- **Fees**: fees are modeled as a percent of filled notional.
+- **Latency**: orders are queued and activated after `latency_bars`; latency is therefore modeled
+  in whole-bar units in the current engine.
+- **Liquidity model**: there is no order-book depth or venue queue model yet. Orders fill in full
+  once eligible unless risk limits clip the requested quantity.
+- **Marking method**: equity and unrealized PnL are marked using the latest bar close / last trade
+  proxy tracked by the engine.
+- **Calibration sampling rule**: prediction-quality metrics are computed from **fill execution
+  prices** joined to resolved market outcomes, not from near-resolution snapshots.
+
+These assumptions are conservative enough for MVP work, but they should still be read as explicit
+modeling choices rather than venue-perfect microstructure replication.
+
 ## Vocabulary Guardrails
 
 Use domain-native language:

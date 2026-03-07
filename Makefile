@@ -1,4 +1,4 @@
-.PHONY: install install-index lint typecheck test setup data-setup index data-index
+.PHONY: install install-index lint typecheck test coverage setup data-setup index data-index
 
 SOURCE ?= all
 MODE ?= all
@@ -17,6 +17,9 @@ typecheck:
 
 test:
 	uv run pytest
+
+coverage:
+	uv run pytest --cov=src/pm_bt --cov-report=term-missing
 
 setup: data-setup
 
